@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         TARGET_BRANCH = 'main' // Branch to track
-        PROJECT_DIRECTORY = "${env.WORKSPACE}" 
+        PROJECT_DIRECTORY = '/home/ubuntu/jenkins/ci/jenkins-ci' // Explicit project directory
     }
 
     triggers {
@@ -16,12 +16,17 @@ pipeline {
                 script {
                     sh """
                         echo "Navigating to the project directory: ${PROJECT_DIRECTORY}"
+                        
+                        # Ensure the directory exists
+                        if [ ! -d "${PROJECT_DIRECTORY}" ]; then
+                            echo "Directory does not exist: ${PROJECT_DIRECTORY}"
+                            exit 1
+                        fi
+                        
                         cd ${PROJECT_DIRECTORY}
                         
-                        echo "Resetting repository to clean state"
-                        
                         echo "Pulling latest changes for branch: ${TARGET_BRANCH}"
-                        git pull 
+                        git pull origin ${TARGET_BRANCH}
                         
                         echo "Installing npm dependencies"
                         npm install
@@ -35,6 +40,7 @@ pipeline {
                 script {
                     sh """
                         echo "Building the application"
+                        cd ${PROJECT_DIRECTORY}
                         npm run build
                     """
                 }
@@ -46,6 +52,7 @@ pipeline {
                 script {
                     sh """
                         echo "Building and deploying Docker containers"
+                        cd ${PROJECT_DIRECTORY}
                         docker-compose up --build -d
                     """
                 }
